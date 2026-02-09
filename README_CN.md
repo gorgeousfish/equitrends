@@ -573,7 +573,7 @@ else {
 
 > Dette, H., & Schumann, M. (2024). Testing for Equivalence of Pre-Trends in Difference-in-Differences Estimation. *Journal of Business & Economic Statistics*, 42(4), 1289–1301. https://doi.org/10.1080/07350015.2024.2308121
 >
-> Cai, X., & Xu, W. (2025). *EQUITRENDS: Stata module for equivalence tests for pre-trends in DiD* (Version 0.1.0) [Computer software]. GitHub. https://github.com/gorgeousfish/equitrends
+> Cai, X., & Xu, W. (2025). *Equitrends: Stata module for equivalence tests for pre-trends in DiD* (Version 0.1.0) [Computer software]. GitHub. https://github.com/gorgeousfish/equitrends
 
 **BibTeX：**
 
@@ -591,7 +591,7 @@ else {
 }
 
 @software{equitrends2025stata,
-  title={EQUITRENDS: Stata module for equivalence tests for pre-trends in DiD},
+  title={Equitrends: Stata module for equivalence tests for pre-trends in DiD},
   author={Cai, Xuanyu and Xu, Wenli},
   year={2025},
   version={0.1.0},
