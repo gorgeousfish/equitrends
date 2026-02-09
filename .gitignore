@@ -1,0 +1,6 @@
+# Log files
+*.log
+
+# Test files
+tests/
+test_*.do

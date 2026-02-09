@@ -1,0 +1,125 @@
+v 3
+d
+d 'EQUITRENDS': Equivalence Tests for Pre-trends in Difference-in-Differences
+d
+d Authors: Cai Xuanyu, Xu Wenli
+d Support: https://github.com/gorgeousfish/equitrends/issues
+d
+d This package implements equivalence testing methods for assessing
+d pre-treatment parallel trends in difference-in-differences (DiD)
+d estimation. It provides three test statistics (Max, Mean, RMS) with
+d bootstrap and intersection-union inference procedures, as described
+d in Dette & Schumann (2024).
+d
+d KW: equitrends
+d KW: equivalence test
+d KW: pre-trends
+d KW: parallel trends
+d KW: difference-in-differences
+d KW: did
+d KW: event study
+d KW: causal inference
+d
+d Requires: Stata version 16.0
+d
+d Distribution-Date: 20260125
+d
+
+* ============================================================
+* Mata library (compiled functions)
+* ============================================================
+f src/build/lequitrends.mlib
+
+* ============================================================
+* Main user commands
+* ============================================================
+f src/ado/equivtest.ado
+f src/ado/maxequivtest.ado
+f src/ado/meanequivtest.ado
+f src/ado/rmsequivtest.ado
+f src/ado/equivsim.ado
+f src/ado/equivtest_plot.ado
+f src/ado/equitrends_init.ado
+f src/ado/equitrends_data.ado
+
+* ============================================================
+* Internal helper programs (prefixed with underscore)
+* ============================================================
+f src/ado/_equitrends_check_deps.ado
+f src/ado/_equitrends_constrained_ols.ado
+f src/ado/_equitrends_dataproc.ado
+f src/ado/_equitrends_demean.ado
+f src/ado/_equitrends_iu.ado
+f src/ado/_equitrends_load_python.ado
+f src/ado/_equitrends_min_threshold_iu.ado
+f src/ado/_equitrends_min_threshold_mean.ado
+f src/ado/_equitrends_pfoldnorm.ado
+f src/ado/_equitrends_qfoldnorm.ado
+f src/ado/_equitrends_validate.ado
+f src/ado/_equitrends_validate_common.ado
+f src/ado/_equitrends_vcov.ado
+f src/ado/_equitrends_vce_native.ado
+f src/ado/_equivtest_display.ado
+f src/ado/_equivtest_display_boot.ado
+f src/ado/_equivtest_display_iu.ado
+f src/ado/_equivtest_display_mean.ado
+f src/ado/_equivtest_display_panel.ado
+f src/ado/_equivtest_display_rms.ado
+f src/ado/_equivtest_display_title.ado
+f src/ado/_equivtest_ereturn.ado
+f src/ado/_equivtest_number_rep.ado
+f src/ado/_equivtest_parse.ado
+f src/ado/_maxequivtest_core.ado
+f src/ado/_maxequivtest_display.ado
+f src/ado/_maxequivtest_parse.ado
+f src/ado/_meanequivtest_core.ado
+f src/ado/_meanequivtest_display.ado
+f src/ado/_meanequivtest_parse.ado
+f src/ado/_rmsequivtest_core.ado
+f src/ado/_rmsequivtest_display.ado
+f src/ado/_rmsequivtest_parse.ado
+
+* ============================================================
+* Help files
+* ============================================================
+f src/sthlp/equitrends.sthlp
+f src/sthlp/equivtest.sthlp
+f src/sthlp/maxequivtest.sthlp
+f src/sthlp/meanequivtest.sthlp
+f src/sthlp/rmsequivtest.sthlp
+f src/sthlp/equivsim.sthlp
+f src/sthlp/equivtest_plot.sthlp
+f src/sthlp/equitrends_data.sthlp
+
+* ============================================================
+* Mata source files (for reference/modification)
+* ============================================================
+f src/mata/equitrends.mata
+f src/mata/equitrends_utils.mata
+f src/mata/equitrends_validate.mata
+f src/mata/equitrends_demean.mata
+f src/mata/equitrends_dataproc.mata
+f src/mata/equitrends_vcov.mata
+f src/mata/equitrends_foldnorm.mata
+f src/mata/equitrends_multicollin.mata
+f src/mata/equitrends_progress.mata
+f src/mata/equitrends_bootstrap.mata
+f src/mata/equitrends_min_delta.mata
+f src/mata/equitrends_mean.mata
+f src/mata/equitrends_maxtest_core.mata
+f src/mata/equitrends_meantest_core.mata
+f src/mata/equitrends_rms.mata
+f src/mata/equitrends_sim.mata
+
+* ============================================================
+* Python integration (optional)
+* ============================================================
+f src/python/equitrends_python.py
+
+* ============================================================
+* Example data and do-files
+* ============================================================
+f data/MonthlyPanel.dta
+f examples/example_empirical_application.do
+
+e

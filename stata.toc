@@ -1,0 +1,20 @@
+v 3
+d Equivalence Tests for Pre-trends in Difference-in-Differences
+d
+d This site provides the equitrends package for Stata, which implements
+d equivalence testing methods for assessing pre-treatment parallel trends
+d in difference-in-differences (DiD) estimation.
+d
+d The package provides three test statistics:
+d   - Max test:  Maximum absolute pre-trend coefficient
+d   - Mean test: Absolute value of mean pre-trend coefficient
+d   - RMS test:  Root mean square of pre-trend coefficients
+d
+d Reference:
+d   Dette, H. & Schumann, M. (2024). "Testing for Equivalence of Pre-Trends
+d   in Difference-in-Differences Estimation." Journal of Business & Economic
+d   Statistics.
+d
+d Maintainer: Cai Xuanyu (xuanyuCAI@outlook.com), Xu Wenli (wlxu@cityu.edu.mo)
+d
+p equitrends Equivalence Tests for Pre-trends in DiD Estimation
