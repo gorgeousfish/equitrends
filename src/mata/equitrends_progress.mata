@@ -285,13 +285,22 @@ void _eqt_progress_update(struct _eqt_progress_bar scalar pb,
     }
 
     // Assemble full line using string concatenation (safe from printf % issues)
-    line = char(13) + "[" + bar_filled + bar_empty + "]" +
+    line = "[" + bar_filled + bar_empty + "]" +
            sprintf(" %3.0f", pct) + "%" +
            " | " + counter_str +
            " | Elapsed: " + time_str + eta_str
 
-    // Output using %s to prevent printf from interpreting % in the string
-    printf("%s", line)
+    // Pad with spaces to overwrite any previous longer line, then carriage return
+    // This prevents residual characters from previous updates appearing on screen
+    {
+        real scalar line_len, pad_len
+        string scalar padded_line
+        line_len = strlen(line)
+        pad_len = 80 - line_len
+        if (pad_len < 0) pad_len = 0
+        padded_line = line + substr("                                                                                ", 1, pad_len)
+        printf("%s%s", char(13), padded_line)
+    }
     displayflush()
 
     pb.last_displayed_pct = pct
@@ -337,13 +346,22 @@ void _eqt_progress_finish(struct _eqt_progress_bar scalar pb)
             bar_filled = bar_filled + "#"
         }
 
-        line = char(13) + "[" + bar_filled + "]" +
+        line = "[" + bar_filled + "]" +
                " 100" + "%" +
                " | " + _eqt_format_number(pb.total) + "/" +
                _eqt_format_number(pb.total) +
                " | Elapsed: " + time_str
 
-        printf("%s", line)
+        // Pad with spaces to clear any residual characters from previous updates
+        {
+            real scalar line_len, pad_len
+            string scalar padded_line
+            line_len = strlen(line)
+            pad_len = 80 - line_len
+            if (pad_len < 0) pad_len = 0
+            padded_line = line + substr("                                                                                ", 1, pad_len)
+            printf("%s%s", char(13), padded_line)
+        }
         printf("\n")
         displayflush()
     }
@@ -416,7 +434,17 @@ void _eqt_progress_search_update(real scalar iter, real scalar max_iter,
         }
     }
     else {
-        printf("%s%s", char(13), line)
+        // Pad with spaces to overwrite any previous longer line
+        // This prevents residual characters from prior updates appearing on screen
+        {
+            real scalar line_len, pad_len
+            string scalar padded_line
+            line_len = strlen(line)
+            pad_len = 80 - line_len
+            if (pad_len < 0) pad_len = 0
+            padded_line = line + substr("                                                                                ", 1, pad_len)
+            printf("%s%s", char(13), padded_line)
+        }
         displayflush()
     }
 }
@@ -452,6 +480,12 @@ void _eqt_progress_search_finish(real scalar iter, real scalar converged,
     line = "  " + status + " in " + strofreal(iter) +
            " iterations | Elapsed: " + _eqt_format_time(elapsed)
 
+    // Clear the current line (which has residual search_update content) before printing
+    {
+        string scalar clear_line
+        clear_line = substr("                                                                                ", 1, 80)
+        printf("%s%s", char(13), clear_line)
+    }
     printf("\n%s\n", line)
     displayflush()
 }
