@@ -1,20 +1,15 @@
 *! equitrends_progress.mata - Progress bar display for EQUITRENDS bootstrap
 *!
-*! Provides a professional progress bar for long-running bootstrap computations.
+*! Provides progress display for long-running bootstrap computations.
 *!
-*! In interactive mode (default):
-*!   Uses carriage return char(13) for in-place line updates, showing:
-*!   - Visual progress bar with filled/empty segments
-*!   - Percentage complete, iteration counter, elapsed time, ETA
+*! Uses milestone-based display (every 10%) with newlines for all modes.
+*! Stata's Results window is a rich text display, not a terminal emulator,
+*! so char(13) carriage-return line overwriting does not work reliably.
 *!
-*! In batch mode (stata -b):
-*!   Uses milestone-based display (every 10%) with newlines, since
-*!   carriage returns do not overwrite in log files.
-*!
-*! The progress bar updates adaptively to minimize display overhead:
-*!   - Updates at most once per ~0.3 seconds (interactive)
-*!   - Updates at 10% milestones only (batch)
-*!   - Always updates on the first and last iteration
+*! The progress display updates at:
+*!   - The first iteration
+*!   - Every 10% milestone
+*!   - The final iteration (100%)
 *!
 *! Timer usage: Uses Mata timer slot 99 (reserved for progress bar)
 *! to avoid conflicts with user timers (typically 1-10).
@@ -180,8 +175,9 @@ void _eqt_progress_init(struct _eqt_progress_bar scalar pb,
 // _eqt_progress_update()
 // Update progress bar display
 //
-// In interactive mode: overwrites current line with carriage return
-// In batch mode: prints milestone lines (every 10%) with newlines
+// Uses milestone-based display (every 10%) with newlines for both
+// interactive and batch modes, since char(13) carriage returns do not
+// work reliably in Stata's Results window.
 //
 // Arguments:
 //   pb      : struct _eqt_progress_bar scalar - progress bar state (modified)
@@ -190,11 +186,9 @@ void _eqt_progress_init(struct _eqt_progress_bar scalar pb,
 void _eqt_progress_update(struct _eqt_progress_bar scalar pb,
                            real scalar current)
 {
-    real scalar elapsed, pct, filled, empty, eta
+    real scalar elapsed, pct, eta
     real scalar milestone
-    string scalar bar_filled, bar_empty, line, time_str, eta_str
-    string scalar counter_str
-    real scalar i
+    string scalar line, time_str, eta_str
 
     pb.current = current
 
@@ -243,65 +237,41 @@ void _eqt_progress_update(struct _eqt_progress_bar scalar pb,
         return
     }
 
-    // ---- Interactive mode: carriage-return progress bar ----
+    // ---- Interactive mode: milestone-based display ----
+    // Note: char(13) carriage-return overwriting does NOT work reliably in
+    // Stata's Results window (it is a rich text display, not a terminal).
+    // Using newline-based milestone output instead, same as batch mode.
 
-    // Throttle updates: skip if less than update_interval since last update
-    // Always display first and last iteration
-    if (current > 1 && current < pb.total) {
-        if (elapsed - pb.last_update_sec < pb.update_interval) {
-            return
+    // Display at 10% milestones, first iteration, and last iteration
+    milestone = floor(pct / 10) * 10
+    if (current == 1) {
+        time_str = _eqt_format_time(elapsed)
+        line = sprintf("  %3.0f", pct) + "%" +
+               " | " + _eqt_format_number(current) + "/" +
+               _eqt_format_number(pb.total) +
+               " | Elapsed: " + time_str
+        printf("%s\n", line)
+        displayflush()
+        pb.last_milestone = 0
+    }
+    else if (milestone > pb.last_milestone && milestone > 0 && milestone < 100) {
+        time_str = _eqt_format_time(elapsed)
+        if (pct > 0 && pct < 100) {
+            eta = elapsed * (100 - pct) / pct
+            eta_str = _eqt_format_time(eta)
         }
+        else {
+            eta_str = "--:--"
+        }
+        line = sprintf("  %3.0f", milestone) + "%" +
+               " | " + _eqt_format_number(current) + "/" +
+               _eqt_format_number(pb.total) +
+               " | Elapsed: " + time_str +
+               " | ETA: " + eta_str
+        printf("%s\n", line)
+        displayflush()
+        pb.last_milestone = milestone
     }
-    pb.last_update_sec = elapsed
-
-    // Build visual bar
-    filled = round(pct / 100 * pb.bar_width)
-    empty = pb.bar_width - filled
-
-    bar_filled = ""
-    for (i = 1; i <= filled; i = i + 1) {
-        bar_filled = bar_filled + "#"
-    }
-    bar_empty = ""
-    for (i = 1; i <= empty; i = i + 1) {
-        bar_empty = bar_empty + "-"
-    }
-
-    // Build counter string
-    counter_str = _eqt_format_number(current) + "/" + _eqt_format_number(pb.total)
-
-    // Build time strings
-    time_str = _eqt_format_time(elapsed)
-
-    if (pct > 0 && pct < 100) {
-        eta = elapsed * (100 - pct) / pct
-        eta_str = " | ETA: " + _eqt_format_time(eta)
-    }
-    else if (pct >= 100) {
-        eta_str = ""
-    }
-    else {
-        eta_str = ""
-    }
-
-    // Assemble full line using string concatenation (safe from printf % issues)
-    line = "[" + bar_filled + bar_empty + "]" +
-           sprintf(" %3.0f", pct) + "%" +
-           " | " + counter_str +
-           " | Elapsed: " + time_str + eta_str
-
-    // Pad with spaces to overwrite any previous longer line, then carriage return
-    // This prevents residual characters from previous updates appearing on screen
-    {
-        real scalar line_len, pad_len
-        string scalar padded_line
-        line_len = strlen(line)
-        pad_len = 80 - line_len
-        if (pad_len < 0) pad_len = 0
-        padded_line = line + substr("                                                                                ", 1, pad_len)
-        printf("%s%s", char(13), padded_line)
-    }
-    displayflush()
 
     pb.last_displayed_pct = pct
 }
@@ -320,8 +290,7 @@ void _eqt_progress_update(struct _eqt_progress_bar scalar pb,
 void _eqt_progress_finish(struct _eqt_progress_bar scalar pb)
 {
     real scalar elapsed
-    string scalar bar_filled, line, time_str
-    real scalar i
+    string scalar line, time_str
 
     if (pb.show == 0) return
 
@@ -330,41 +299,13 @@ void _eqt_progress_finish(struct _eqt_progress_bar scalar pb)
     elapsed = timer_value(pb.timer_slot)[1]
     time_str = _eqt_format_time(elapsed)
 
-    if (pb.batch_mode) {
-        // Final milestone line
-        line = "  100" + "%" +
-               " | " + _eqt_format_number(pb.total) + "/" +
-               _eqt_format_number(pb.total) +
-               " | Elapsed: " + time_str
-        printf("%s\n", line)
-        displayflush()
-    }
-    else {
-        // Build full 100% bar
-        bar_filled = ""
-        for (i = 1; i <= pb.bar_width; i = i + 1) {
-            bar_filled = bar_filled + "#"
-        }
-
-        line = "[" + bar_filled + "]" +
-               " 100" + "%" +
-               " | " + _eqt_format_number(pb.total) + "/" +
-               _eqt_format_number(pb.total) +
-               " | Elapsed: " + time_str
-
-        // Pad with spaces to clear any residual characters from previous updates
-        {
-            real scalar line_len, pad_len
-            string scalar padded_line
-            line_len = strlen(line)
-            pad_len = 80 - line_len
-            if (pad_len < 0) pad_len = 0
-            padded_line = line + substr("                                                                                ", 1, pad_len)
-            printf("%s%s", char(13), padded_line)
-        }
-        printf("\n")
-        displayflush()
-    }
+    // Final 100% line (same format for both batch and interactive)
+    line = "  100" + "%" +
+           " | " + _eqt_format_number(pb.total) + "/" +
+           _eqt_format_number(pb.total) +
+           " | Elapsed: " + time_str
+    printf("%s\n", line)
+    displayflush()
 }
 
 
@@ -409,7 +350,7 @@ void _eqt_progress_search_init(real scalar max_iter, string scalar title,
 void _eqt_progress_search_update(real scalar iter, real scalar max_iter,
                                   real scalar gap, real scalar show)
 {
-    real scalar elapsed, is_batch
+    real scalar elapsed
     string scalar line
 
     if (show == 0) return
@@ -418,33 +359,16 @@ void _eqt_progress_search_update(real scalar iter, real scalar max_iter,
     elapsed = timer_value(98)[1]
     timer_on(98)
 
-    // Detect batch mode
-    is_batch = (st_global("c(mode)") == "batch")
-
     // Build line via string concatenation (safe from printf % issues)
     line = "  Iteration " + strofreal(iter) + "/" + strofreal(max_iter) +
            " | Gap: " + sprintf("%12.8f", gap) +
            " | Elapsed: " + _eqt_format_time(elapsed)
 
-    if (is_batch) {
-        // In batch mode, only print every 5 iterations or first/last
-        if (iter == 1 || mod(iter, 5) == 0) {
-            printf("%s\n", line)
-            displayflush()
-        }
-    }
-    else {
-        // Pad with spaces to overwrite any previous longer line
-        // This prevents residual characters from prior updates appearing on screen
-        {
-            real scalar line_len, pad_len
-            string scalar padded_line
-            line_len = strlen(line)
-            pad_len = 80 - line_len
-            if (pad_len < 0) pad_len = 0
-            padded_line = line + substr("                                                                                ", 1, pad_len)
-            printf("%s%s", char(13), padded_line)
-        }
+    // Print every 5 iterations or first/last to avoid flooding output
+    // Note: char(13) carriage-return overwriting does NOT work reliably in
+    // Stata's Results window, so we use newline-based output for all modes.
+    if (iter == 1 || mod(iter, 5) == 0) {
+        printf("%s\n", line)
         displayflush()
     }
 }
@@ -480,13 +404,7 @@ void _eqt_progress_search_finish(real scalar iter, real scalar converged,
     line = "  " + status + " in " + strofreal(iter) +
            " iterations | Elapsed: " + _eqt_format_time(elapsed)
 
-    // Clear the current line (which has residual search_update content) before printing
-    {
-        string scalar clear_line
-        clear_line = substr("                                                                                ", 1, 80)
-        printf("%s%s", char(13), clear_line)
-    }
-    printf("\n%s\n", line)
+    printf("%s\n", line)
     displayflush()
 }
 
